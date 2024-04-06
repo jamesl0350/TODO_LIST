@@ -2,7 +2,8 @@ const express = require("express");
 const app = express();
 const port = 3000;
 app.use(express.json());
-
+const cors = require("cors");
+app.use(cors());
 var mysql = require("mysql");
 var connection = mysql.createConnection({
   host: "localhost",
@@ -19,6 +20,7 @@ app.get("/", (req, res) => {
   });
 });
 
+//endpoint example
 app.get("/hello", (req, res) => {
   res.send("This is another endpoint");
 });
@@ -57,21 +59,6 @@ app.post("/users/:userId/lists", (req, res) => {
   );
 });
 
-app.post("/users/:userId/lists/:listId", (req, res) => {
-  const listId = req.params.listId;
-  console.log("We're here");
-  const itemName = req.body.itemName;
-  const values = { task: itemName, todo_list_id: listId };
-  var query = connection.query(
-    "INSERT INTO TODO_LIST_ITEMS SET ?",
-    values,
-    function (error, results, fields) {
-      if (error) throw error;
-      res.send(results);
-    }
-  );
-});
-
 app.put("/users/:userId/lists/:listId", (req, res) => {
   const listId = req.params.listId;
   console.log("We're here");
@@ -92,7 +79,7 @@ app.put("/users/:id/lists/:listId/item/:itemId", (req, res) => {
   const itemId = req.params.itemId;
   console.log("We're here");
   const itemName = req.body.itemName;
-  const values = { name: itemName};
+  const values = { name: itemName };
   var query = connection.query(
     `UPDATE TODO_LIST_ITEMS SET task = "${itemName}" WHERE id = "${itemId}"`,
     values,
