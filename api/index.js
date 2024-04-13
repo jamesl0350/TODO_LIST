@@ -5,6 +5,12 @@ app.use(express.json());
 const cors = require("cors");
 app.use(cors());
 var mysql = require("mysql");
+const passport = require("passport");
+
+const { login, signup } = require("./passport");
+login(passport);
+signup(passport);
+
 var connection = mysql.createConnection({
   host: "localhost",
   user: "root",
@@ -12,6 +18,7 @@ var connection = mysql.createConnection({
   database: "project",
 });
 connection.connect();
+
 app.get("/", (req, res) => {
   connection.query("select * from USERS", function (error, results, fields) {
     if (error) throw error;
@@ -25,13 +32,23 @@ app.get("/hello", (req, res) => {
   res.send("This is another endpoint");
 });
 
-app.post("/login", (req, res) => {
-  console.log(req.body);
-});
+app.post(
+  "/login",
+  passport.authenticate("local-login", { session: false }),
+  (req, res, next) => {
+    res.json({ user: req.user });
+  }
+);
 
-app.post("/registration", (req, res) => {
-  console.log(req.body);
-});
+app.post(
+  "/registration",
+  passport.authenticate("local-signup", { session: false }),
+  (req, res, next) => {
+    res.json({
+      user: req.user,
+    });
+  }
+);
 
 app.get("/users/:userId/lists", (req, res) => {
   connection.query(
