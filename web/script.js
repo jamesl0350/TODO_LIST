@@ -58,6 +58,7 @@ newListForm.addEventListener("submit", (e) => {
   const list = createList(listName);
   newListInput.value = null;
   lists.push(list);
+  createUserList(listName);
   saveAndRender();
 });
 
@@ -68,7 +69,9 @@ newTaskForm.addEventListener("submit", (e) => {
   const task = createTask(taskName);
   newTaskInput.value = null;
   const selectedList = lists.find((list) => list.id === selectedListId);
-  selectedList.tasks.push(task);
+  // selectedList.tasks.push(task);
+  console.log("blahblahblah");
+  createTaskItem(taskName);
   saveAndRender();
 });
 
@@ -174,18 +177,67 @@ function test() {
     alert("Request failed");
   };
 }
-function testPost() {
+function register(email, password) {
   var xhttp = new XMLHttpRequest();
   xhttp.onerror = function (e) {
     console.log("error", e);
   };
 
-  xhttp.open("POST", "http://127.0.0.1:3000/login", true);
+  xhttp.open("POST", "http://127.0.0.1:3000/registration", true);
   xhttp.setRequestHeader("Content-Type", "application/json");
-  xhttp.send('{"blaa":"yaaaa"}');
+  xhttp.send(JSON.stringify({ email, password }));
 }
 
-testPost();
+function fetchUserList(email) {
+  var xhttp = new XMLHttpRequest();
+  return new Promise((resolve, reject) => {
+    xhttp.onerror = function (e) {
+      console.log("error", e);
+    };
 
-test();
+    xhttp.onreadystatechange = function () {
+      if (xhttp.readyState == XMLHttpRequest.DONE) {
+        return resolve(JSON.parse(xhttp.responseText));
+      }
+    };
+    xhttp.open("GET", "http://127.0.0.1:3000/users/1/lists", true);
+    xhttp.setRequestHeader("Content-Type", "application/json");
+    xhttp.send();
+  });
+}
+
+function createUserList(listName) {
+  //create form to be able to enter list name
+  var xhttp = new XMLHttpRequest();
+  xhttp.onerror = function (e) {
+    console.log("error", e);
+  };
+
+  xhttp.open("POST", "http://127.0.0.1:3000/users/1/lists", true);
+  xhttp.setRequestHeader("Content-Type", "application/json");
+  xhttp.send(JSON.stringify({ listName, userId: 1 }));
+}
+
+function createTaskItem(taskName) {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onerror = function (e) {
+    console.log("error", e);
+  };
+  const listId = 1; //TODO get this from form
+  xhttp.open(
+    "POST",
+    `http://127.0.0.1:3000/users/1/lists/${listId}/item`,
+    true
+  );
+  xhttp.setRequestHeader("Content-Type", "application/json");
+  xhttp.send(JSON.stringify({ itemName: taskName, userId: 1 }));
+}
+
+//make sure you have FE capable of fetching user lists, creating user lists, creating user list items.
+
+//focus on defining functions to call from HTML
+
+//when loading page should fetch list of todo lists, add new todo lists, add new items to the todo lists,
+// register("test@test.com", "secret");
+fetchUserList().then((x) => console.log(x));
 render();
