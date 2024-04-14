@@ -104,9 +104,9 @@ submitRegistrationForm.addEventListener("submit", (e) => {
     if (!result) alert("login failed");
     console.log(result);
     localStorage.setItem("user", JSON.stringify(result));
+    saveAndRender();
+    checkIfLoggedIn();
   });
-  saveAndRender();
-  checkIfLoggedIn();
 });
 //Login Submit Form event Listener
 submitLoginForm.addEventListener("submit", (e) => {
@@ -122,6 +122,7 @@ submitLoginForm.addEventListener("submit", (e) => {
     localStorage.setItem("user", JSON.stringify(result));
   });
   saveAndRender();
+  checkIfLoggedIn();
 });
 logoutElement.addEventListener("click", (e) => {
   e.preventDefault();
@@ -211,11 +212,7 @@ function renderLists() {
 
 function clearElement(element) {
   while (element.firstChild) {
-    function clearElement(element) {
-      while (element.firstChild) {
-        element.removeChild(element.firstChild);
-      }
-    }
+    element.removeChild(element.firstChild);
   }
 }
 function test() {
@@ -245,64 +242,6 @@ function test() {
   xhr.onerror = function () {
     alert("Request failed");
   };
-}
-function register(email, password) {
-  var xhttp = new XMLHttpRequest();
-  xhttp.onerror = function (e) {
-    console.log("error", e);
-  };
-
-  xhttp.open("POST", "http://127.0.0.1:3000/registration", true);
-  xhttp.setRequestHeader("Content-Type", "application/json");
-  xhttp.send(JSON.stringify({ email, password }));
-}
-
-function fetchUserList(email) {
-  var xhttp = new XMLHttpRequest();
-  return new Promise((resolve, reject) => {
-    xhttp.onerror = function (e) {
-      console.log("error", e);
-    };
-    element.removeChild(element.firstChild);
-  });
-}
-function test() {
-  let xhr = new XMLHttpRequest();
-  var params = "orem=ipsum&name=binny";
-  xhr.open("POST", "localhost:3000/login");
-  xhr.setRequestHeader("Content-Type", "application/json");
-  xhr.send(params);
-  xhr.onload = function () {
-    if (xhr.status != 200) {
-      // analyze HTTP status of the response
-      // alert(Error ${xhr.status}: ${xhr.statusText}); // e.g. 404: Not Found
-    } else {
-      // show the result
-      // alert(Done, got ${xhr.response.length} bytes); // response is the server response
-    }
-  };
-
-  xhr.onprogress = function (event) {
-    //if (event.lengthComputable) {
-    // alert(Received ${event.loaded} of ${event.total} bytes);
-    //} else {
-    //alert(Received ${event.loaded} bytes); // no Content-Length
-    //}
-  };
-
-  xhr.onerror = function () {
-    alert("Request failed");
-  };
-}
-function register(email, password) {
-  var xhttp = new XMLHttpRequest();
-  xhttp.onerror = function (e) {
-    console.log("error", e);
-  };
-
-  xhttp.open("POST", "http://127.0.0.1:3000/registration", true);
-  xhttp.setRequestHeader("Content-Type", "application/json");
-  xhttp.send(JSON.stringify({ email, password }));
 }
 
 function fetchUserList(email) {
