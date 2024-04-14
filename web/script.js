@@ -14,6 +14,18 @@ const newTaskInput = document.querySelector("[data-new-task-input]");
 const submitLoginForm = document.querySelector("[data-new-login-form]");
 const newLoginEmail = document.querySelector("[data-new-login-email]");
 const newLoginPassword = document.querySelector("[data-new-login-password]");
+const submitRegistrationForm = document.querySelector(
+  "[data-new-registration-form]"
+);
+const newRegistrationName = document.querySelector(
+  "[data-new-registration-name"
+);
+const newRegistrationEmail = document.querySelector(
+  "[data-new-registration-email]"
+);
+const newRegistrationPassword = document.querySelector(
+  "[data-new-registration-password]"
+);
 const logoutElement = document.getElementById("logout");
 const clearCompleteTasksButton = document.querySelector(
   "[data-clear-complete-tasks-button]"
@@ -79,7 +91,24 @@ newTaskForm.addEventListener("submit", (e) => {
   createTaskItem(taskName);
   saveAndRender();
 });
+//Registration submit Form event listener
+submitRegistrationForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const email = newRegistrationEmail.value;
+  const password = newRegistrationPassword.value;
+  const name = newRegistrationName.value;
 
+  if (!email || !password) return;
+
+  registration(name, email, password).then((result) => {
+    if (!result) alert("login failed");
+    console.log(result);
+    localStorage.setItem("user", JSON.stringify(result));
+  });
+  saveAndRender();
+  checkIfLoggedIn();
+});
+//Login Submit Form event Listener
 submitLoginForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const email = newLoginEmail.value;
@@ -97,6 +126,7 @@ submitLoginForm.addEventListener("submit", (e) => {
 logoutElement.addEventListener("click", (e) => {
   e.preventDefault();
   localStorage.setItem("user", null);
+  checkIfLoggedIn();
 });
 
 function createList(name) {
@@ -181,8 +211,60 @@ function renderLists() {
 
 function clearElement(element) {
   while (element.firstChild) {
-    element.removeChild(element.firstChild);
+    function clearElement(element) {
+      while (element.firstChild) {
+        element.removeChild(element.firstChild);
+      }
+    }
   }
+}
+function test() {
+  let xhr = new XMLHttpRequest();
+  var params = "orem=ipsum&name=binny";
+  xhr.open("POST", "localhost:3000/login");
+  xhr.setRequestHeader("Content-Type", "application/json");
+  xhr.send(params);
+  xhr.onload = function () {
+    if (xhr.status != 200) {
+      // analyze HTTP status of the response
+      // alert(Error ${xhr.status}: ${xhr.statusText}); // e.g. 404: Not Found
+    } else {
+      // show the result
+      // alert(Done, got ${xhr.response.length} bytes); // response is the server response
+    }
+  };
+
+  xhr.onprogress = function (event) {
+    //if (event.lengthComputable) {
+    // alert(Received ${event.loaded} of ${event.total} bytes);
+    //} else {
+    //alert(Received ${event.loaded} bytes); // no Content-Length
+    //}
+  };
+
+  xhr.onerror = function () {
+    alert("Request failed");
+  };
+}
+function register(email, password) {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onerror = function (e) {
+    console.log("error", e);
+  };
+
+  xhttp.open("POST", "http://127.0.0.1:3000/registration", true);
+  xhttp.setRequestHeader("Content-Type", "application/json");
+  xhttp.send(JSON.stringify({ email, password }));
+}
+
+function fetchUserList(email) {
+  var xhttp = new XMLHttpRequest();
+  return new Promise((resolve, reject) => {
+    xhttp.onerror = function (e) {
+      console.log("error", e);
+    };
+    element.removeChild(element.firstChild);
+  });
 }
 function test() {
   let xhr = new XMLHttpRequest();
@@ -267,7 +349,25 @@ function createTaskItem(taskName) {
   xhttp.setRequestHeader("Content-Type", "application/json");
   xhttp.send(JSON.stringify({ itemName: taskName, userId: 1 }));
 }
-
+//Registration
+function registration(name, email, password) {
+  return new Promise((resolve, reject) => {
+    var xhttp = new XMLHttpRequest();
+    xhttp.onerror = function (e) {
+      console.log("error", e);
+    };
+    xhttp.onreadystatechange = function () {
+      if (xhttp.readyState == XMLHttpRequest.DONE) {
+        return resolve(
+          xhttp.responseText === "false" ? null : JSON.parse(xhttp.responseText)
+        );
+      }
+    };
+    xhttp.open("POST", `http://127.0.0.1:3000/registration`, true);
+    xhttp.setRequestHeader("Content-Type", "application/json");
+    xhttp.send(JSON.stringify({ name, email, password }));
+  });
+}
 //login page
 function login(email, password) {
   return new Promise((resolve, reject) => {
@@ -293,12 +393,24 @@ function checkIfLoggedIn() {
   console.log(user);
   if (user && user != "null") {
     console.log("User Exists");
+    document.getElementById("main").style.display = "block";
+    document.getElementById("logout").style.display = "block";
     document.getElementById("login").style.display = "none";
   } else {
     document.getElementById("main").style.display = "none";
     document.getElementById("logout").style.display = "none";
+    document.getElementById("login").style.display = "block";
   }
 }
+
+//get user ID
+
+function getUserId() {
+  const user = localStorage.getItem("user");
+  if (!user || user === "null") return null;
+  return JSON.parse(user).id;
+}
+
 //make sure you have FE capable of fetching user lists, creating user lists, creating user list items.
 
 //focus on defining functions to call from HTML

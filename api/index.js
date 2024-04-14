@@ -56,7 +56,7 @@ app.post("/registration", async (req, res) => {
     const user = await emailExists(email);
 
     if (user) {
-      res.send(user);
+      res.send("error");
       return;
     }
 
