@@ -130,6 +130,8 @@ app.delete("/users/:id/lists/:listId/item/:itemId", (req, res) => {
   );
 });
 
+//delete todo list
+
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });

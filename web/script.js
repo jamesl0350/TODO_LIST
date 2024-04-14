@@ -239,5 +239,10 @@ function createTaskItem(taskName) {
 
 //when loading page should fetch list of todo lists, add new todo lists, add new items to the todo lists,
 // register("test@test.com", "secret");
-fetchUserList().then((x) => console.log(x));
+
+// next task (stop hard coding list items)
+// after that create function for deleting list item
+
+//create endpoint
+fetchUserList().then((x) => console.log(x)); //fetching data, need to fetch user lists and render that
 render();
