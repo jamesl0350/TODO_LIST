@@ -11,6 +11,10 @@ const tasksContainer = document.querySelector("[data-tasks]");
 const taskTemplate = document.getElementById("task-template");
 const newTaskForm = document.querySelector("[data-new-task-form]");
 const newTaskInput = document.querySelector("[data-new-task-input]");
+const submitLoginForm = document.querySelector("[data-new-login-form]");
+const newLoginEmail = document.querySelector("[data-new-login-email]");
+const newLoginPassword = document.querySelector("[data-new-login-password]");
+const logoutElement = document.getElementById("logout");
 const clearCompleteTasksButton = document.querySelector(
   "[data-clear-complete-tasks-button]"
 );
@@ -23,19 +27,20 @@ let selectedListId = localStorage.getItem(LOCAL_STORAGE_SELECTED_LIST_ID_KEY);
 listsContainer.addEventListener("click", (e) => {
   if (e.target.tagName.toLowerCase() === "li") {
     selectedListId = e.target.dataset.listId;
+    console.log(e.target.dataset);
     saveAndRender();
   }
 });
 
 tasksContainer.addEventListener("click", (e) => {
   if (e.target.tagName.toLowerCase() === "input") {
-    const selectedList = lists.find((list) => list.id === selectedListId);
+    const selectedList = lists.find((list) => list.name === selectedListId);
     const selectedTask = selectedList.tasks.find(
       (task) => task.id === e.target.id
     );
     selectedTask.complete = e.target.checked;
     save();
-    renderTaskCount(selectedList);
+    // renderTaskCount(selectedList);
   }
 });
 
@@ -46,7 +51,7 @@ deleteListButton.addEventListener("click", (e) => {
 });
 
 clearCompleteTasksButton.addEventListener("click", (e) => {
-  const selectedList = lists.find((list) => list.id === selectedListId);
+  const selectedList = lists.find((list) => list.name === selectedListId);
   selectedList.tasks = selectedList.tasks.filter((task) => !task.complete);
   saveAndRender();
 });
@@ -68,11 +73,30 @@ newTaskForm.addEventListener("submit", (e) => {
   if (taskName == null || taskName === "") return;
   const task = createTask(taskName);
   newTaskInput.value = null;
-  const selectedList = lists.find((list) => list.id === selectedListId);
+  const selectedList = lists.find((list) => list.name === selectedListId);
   // selectedList.tasks.push(task);
   console.log("blahblahblah");
   createTaskItem(taskName);
   saveAndRender();
+});
+
+submitLoginForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const email = newLoginEmail.value;
+  const password = newLoginPassword.value;
+
+  if (!email || !password) return;
+
+  login(email, password).then((result) => {
+    if (!result) alert("login failed");
+    console.log(result);
+    localStorage.setItem("user", JSON.stringify(result));
+  });
+  saveAndRender();
+});
+logoutElement.addEventListener("click", (e) => {
+  e.preventDefault();
+  localStorage.setItem("user", null);
 });
 
 function createList(name) {
@@ -96,29 +120,37 @@ function save() {
 function render() {
   clearElement(listsContainer);
   renderLists();
-  const selectedList = lists.find((list) => list.id === selectedListId);
+  const selectedList = lists.find((list) => list.name === selectedListId);
+  console.log(selectedListId);
 
   if (selectedListId == null) {
     listDisplayContainer.style.display = "none";
   } else {
     listDisplayContainer.style.display = "";
-    listTitleElement.innerText = selectedList.name;
-    renderTaskCount(selectedList);
+    // listTitleElement.innerText = selectedList.name;
+    // renderTaskCount(selectedList);
     clearElement(tasksContainer);
     renderTasks(selectedList);
   }
 }
 
 function renderTasks(selectedList) {
-  selectedList.tasks.forEach((task) => {
-    const taskElement = document.importNode(taskTemplate.content, true);
-    const checkbox = taskElement.querySelector("input");
-    checkbox.id = task.id;
-    checkbox.checked = task.complete;
-    const label = taskElement.querySelector("label");
-    label.htmlFor = task.id;
-    label.append(task.name);
-    tasksContainer.appendChild(taskElement);
+  fetchUserList().then((newList) => {
+    lists = newList;
+    console.log(lists);
+    const desiredList = newList.find((l) => l.name === selectedList);
+    console.log(selectedList);
+    console.log("we're here", desiredList);
+    desiredList.items.forEach((task) => {
+      const taskElement = document.importNode(taskTemplate.content, true);
+      const checkbox = taskElement.querySelector("input");
+      checkbox.id = task.id;
+      checkbox.checked = task.complete;
+      const label = taskElement.querySelector("label");
+      label.htmlFor = task.id;
+      label.append(task.task);
+      tasksContainer.appendChild(taskElement);
+    });
   });
 }
 
@@ -132,15 +164,18 @@ function renderTaskCount(selectedList) {
 }
 
 function renderLists() {
-  lists.forEach((list) => {
-    const listElement = document.createElement("li");
-    listElement.dataset.listId = list.id;
-    listElement.classList.add("list-name");
-    listElement.innerText = list.name;
-    if (list.id === selectedListId) {
-      listElement.classList.add("active-list");
-    }
-    listsContainer.appendChild(listElement);
+  fetchUserList().then((newList) => {
+    lists = newList;
+    lists.forEach((list) => {
+      const listElement = document.createElement("li");
+      listElement.dataset.listId = list.name;
+      listElement.classList.add("list-name");
+      listElement.innerText = list.name;
+      if (list.name === selectedListId) {
+        listElement.classList.add("active-list");
+      }
+      listsContainer.appendChild(listElement);
+    });
   });
 }
 
@@ -233,6 +268,37 @@ function createTaskItem(taskName) {
   xhttp.send(JSON.stringify({ itemName: taskName, userId: 1 }));
 }
 
+//login page
+function login(email, password) {
+  return new Promise((resolve, reject) => {
+    var xhttp = new XMLHttpRequest();
+    xhttp.onerror = function (e) {
+      console.log("error", e);
+    };
+    xhttp.onreadystatechange = function () {
+      if (xhttp.readyState == XMLHttpRequest.DONE) {
+        return resolve(
+          xhttp.responseText === "false" ? null : JSON.parse(xhttp.responseText)
+        );
+      }
+    };
+    xhttp.open("POST", `http://127.0.0.1:3000/login`, true);
+    xhttp.setRequestHeader("Content-Type", "application/json");
+    xhttp.send(JSON.stringify({ email, password }));
+  });
+}
+
+function checkIfLoggedIn() {
+  var user = localStorage.getItem("user");
+  console.log(user);
+  if (user && user != "null") {
+    console.log("User Exists");
+    document.getElementById("login").style.display = "none";
+  } else {
+    document.getElementById("main").style.display = "none";
+    document.getElementById("logout").style.display = "none";
+  }
+}
 //make sure you have FE capable of fetching user lists, creating user lists, creating user list items.
 
 //focus on defining functions to call from HTML
@@ -244,5 +310,6 @@ function createTaskItem(taskName) {
 // after that create function for deleting list item
 
 //create endpoint
-fetchUserList().then((x) => console.log(x)); //fetching data, need to fetch user lists and render that
+//fetching data, need to fetch user lists and render that
+checkIfLoggedIn();
 render();

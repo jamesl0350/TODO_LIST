@@ -100,8 +100,20 @@ app.get("/users/:userId/lists", (req, res) => {
     `select TODO_LIST.*, TODO_LIST_ITEMS.* from TODO_LIST inner join TODO_LIST_ITEMS on TODO_LIST_ITEMS.todo_list_id = TODO_LIST.id where TODO_LIST.user_id = ${req.params.userId}`,
     function (error, results, fields) {
       if (error) throw error;
-      console.log("The solution is: ", results);
-      res.send(results);
+      const formatted = results.reduce((accum, item) => {
+        if (!accum[item.todo_list_id]) {
+          accum[item.todo_list_id] = {
+            todo_list_id: item.todo_list_id,
+            user_id: item.user_id,
+            name: item.name,
+            items: [],
+          };
+        }
+        accum[item.todo_list_id].items.push({ id: item.id, task: item.task });
+
+        return accum;
+      }, {});
+      res.send(Object.values(formatted));
     }
   );
 });
@@ -181,6 +193,17 @@ app.delete("/users/:id/lists/:listId/item/:itemId", (req, res) => {
 });
 
 //delete todo list
+app.delete("/users/:id/lists/:listId", (req, res) => {
+  console.log(req.body);
+  const listId = req.params.listId;
+  var query = connection.query(
+    `DELETE FROM TODO_LIST WHERE id = ${listId}`,
+    function (error, results, fields) {
+      if (error) throw error;
+      res.send(results);
+    }
+  );
+});
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
