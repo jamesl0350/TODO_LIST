@@ -1,17 +1,86 @@
 const express = require("express");
 const app = express();
 const port = 3000;
-app.use(express.json());
 const cors = require("cors");
-app.use(cors());
 const connection = require("./db");
-// const passport = require("passport");
+const session = require("express-session");
+const passport = require("passport");
+const LocalStrategy = require("passport-local");
+const { emailExists, createUser, matchPassword } = require("./user");
 
-const { login, signup } = require("./passport");
-// login(passport);
-// signup(passport);
+app.use(express.json());
+app.use(cors());
 
 connection.connect();
+
+app.use(
+  session({
+    secret: "secret",
+    resave: false,
+    saveUninitialized: true,
+  })
+);
+
+passport.use(
+  "local-login",
+  new LocalStrategy(
+    {
+      usernameField: "email",
+      passwordField: "password",
+    },
+    async (email, password, done) => {
+      console.log(123);
+      try {
+        const user = await emailExists(email);
+        if (!user) return done(null, false);
+        const isMatch = await matchPassword(password, user.password);
+        if (!isMatch) return done(null, false);
+        return done(null, user);
+      } catch (error) {
+        return done(error, false);
+      }
+    }
+  )
+);
+
+app.post("/registration", async (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  const name = req.body.name;
+
+  if (!email || !password) {
+    res.send("error");
+    return;
+  }
+  try {
+    const user = await emailExists(email);
+
+    if (user) {
+      res.send(user);
+      return;
+    }
+
+    const newUser = await createUser(email, password, name);
+    res.send(newUser);
+  } catch (error) {
+    return;
+  }
+});
+
+app.post("/login", (req, res) => {
+  passport.authenticate(
+    "local-login",
+    {
+      session: false,
+    },
+    function (error, value) {
+      res.send(value);
+    }
+  )(req, res);
+});
+
+app.use(passport.initialize()); // init passport on every route call
+app.use(passport.session()); //allow passport to use "express-session"
 
 app.get("/", (req, res) => {
   connection.query("select * from USERS", function (error, results, fields) {
@@ -25,25 +94,6 @@ app.get("/", (req, res) => {
 app.get("/hello", (req, res) => {
   res.send("This is another endpoint");
 });
-
-// app.post(
-//   "/login",
-//   passport.authenticate("local-login", { session: false }),
-//   (req, res, next) => {
-//     res.json({ user: req.user });
-//   }
-// );
-
-// app.post(
-//   "/registration",
-//   passport.authenticate("local-signup", { session: false }),
-//   (req, res, next) => {
-//     console.log(req);
-//     res.json({
-//       user: req.user,
-//     });
-//   }
-// );
 
 app.get("/users/:userId/lists", (req, res) => {
   connection.query(

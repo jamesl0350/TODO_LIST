@@ -1,26 +1,31 @@
 const bcrypt = require("bcryptjs");
 const client = require("./db");
 
-const createUser = async (email, password) => {
+const createUser = async (email, password, name) => {
   const salt = await bcrypt.genSalt(10);
   const hash = await bcrypt.hash(password, salt);
 
-  const data = await client.query(
-    "INSERT INTO USERS(email, password) VALUES ($1, $2) RETURNING id, email, password",
-    [email, hash]
+  await client.query(
+    `INSERT INTO USERS(email, name, password) VALUES ("${email}","${name}", "${hash}")`
   );
-
-  if (data.rowCount == 0) return false;
-  return data.rows[0];
+  return emailExists(email);
 };
 
 const emailExists = async (email) => {
-  const data = await client.query(
-    `SELECT * FROM project.USERS WHERE email="${email}";`
-  );
-  console.log(data);
-  if (data.rowCount == 0) return false;
-  return data.rows[0];
+  return new Promise((resolve, reject) => {
+    let res;
+    return client.query(
+      `SELECT * FROM USERS WHERE email="${email}";`,
+      function (error, results, fields) {
+        if (error) reject(error);
+        console.log(results);
+        if (!results || results.length == 0) {
+          resolve();
+        }
+        resolve(results[0]);
+      }
+    );
+  });
 };
 
 const matchPassword = async (password, hashPassword) => {

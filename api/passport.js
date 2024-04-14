@@ -1,32 +1,5 @@
 const LocalStrategy = require("passport-local");
 const { emailExists, createUser, matchPassword } = require("./user");
-const client = require("./db");
-
-const signup = (passport) => {
-  passport.use(
-    "local-signup",
-    new LocalStrategy(
-      {
-        usernameField: "email",
-        passwordField: "password",
-      },
-      async (email, password, done) => {
-        try {
-          const userExists = await emailExists(email);
-
-          if (userExists) {
-            return done(null, false);
-          }
-
-          const user = await createUser(email, password);
-          return done(null, user);
-        } catch (error) {
-          done(error);
-        }
-      }
-    )
-  );
-};
 
 const login = (passport) => {
   passport.use(
@@ -37,6 +10,7 @@ const login = (passport) => {
         passwordField: "password",
       },
       async (email, password, done) => {
+        console.log(123)
         try {
           const user = await emailExists(email);
           if (!user) return done(null, false);
@@ -52,6 +26,5 @@ const login = (passport) => {
 };
 
 module.exports = {
-  signup,
   login,
 };
