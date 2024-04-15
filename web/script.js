@@ -70,20 +70,24 @@ tasksContainer.addEventListener("click", (e) => {
   if (e.target.tagName.toLowerCase() === "input") {
     const selectedList = getLists().find((list) => list.todo_list_id === getSelectedListId());
     const selectedTask = selectedList.items.find(
-      (task) => task.id === e.target.id
+      (task) => `${task.id}` === `${e.target.id}`
     );
-    selectedTask.complete = e.target.checked;
-    save();
-    renderTaskCount(selectedList);
+    if (selectedTask && selectedTask.complete !== e.target.checked) {
+      // selectedTask.complete = e.target.checked;
+      updateTaskById(selectedList.todo_list_id, selectedTask.id, {...selectedTask, complete: e.target.checked }).then(v => {
+        fetchAndSetUserList();
+        renderTaskCount(selectedList);
+      });
+    }
+
   }
 });
 
 deleteListButton.addEventListener("click", (e) => {
-  const newLists = getLists().filter((list) => list.todo_list_id !== selectedListId);
-  //; TODO this isn't actually deleting anything
-  setSelectedListId(null);
-  setLists(newLists);
-  saveAndRender();
+  deleteList().then(() => {
+    setSelectedListId(null);
+    saveAndRender();
+  });
 });
 
 clearCompleteTasksButton.addEventListener("click", (e) => {
@@ -310,6 +314,43 @@ function createTaskItem(taskName) {
   xhttp.setRequestHeader("Content-Type", "application/json");
   xhttp.send(JSON.stringify({ itemName: taskName, userId: getUserId() }));
 }
+
+function updateTaskById(listId, taskId, task) {
+  var xhttp = new XMLHttpRequest();
+  return new Promise((resolve, reject) => {
+    xhttp.onerror = function (e) {
+      console.log("error", e);
+    };
+
+    xhttp.onreadystatechange = function () {
+      if (xhttp.readyState == XMLHttpRequest.DONE) {
+        return resolve(JSON.parse(xhttp.responseText));
+      }
+    }
+    xhttp.open("PUT", `http://127.0.0.1:3000/users/${getUserId()}/lists/${listId}/item/${taskId}`, true);
+    xhttp.setRequestHeader("Content-Type", "application/json");
+    xhttp.send(JSON.stringify(task));
+  });
+}
+
+function deleteList() {
+  var xhttp = new XMLHttpRequest();
+  return new Promise((resolve, reject) => {
+    xhttp.onerror = function (e) {
+      console.log("error", e);
+    };
+
+    xhttp.onreadystatechange = function () {
+      if (xhttp.readyState == XMLHttpRequest.DONE) {
+        return resolve(JSON.parse(xhttp.responseText));
+      }
+    }
+    xhttp.open("DELETE", `http://127.0.0.1:3000/users/${getUserId()}/lists/${getSelectedListId()}`, true);
+    xhttp.setRequestHeader("Content-Type", "application/json");
+    xhttp.send();
+  });
+}
+
 //Registration
 function registration(name, email, password) {
   return new Promise((resolve, reject) => {

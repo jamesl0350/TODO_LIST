@@ -97,7 +97,7 @@ app.get("/hello", (req, res) => {
 
 app.get("/users/:userId/lists", (req, res) => {
   connection.query(
-    `select TODO_LIST.*, TODO_LIST_ITEMS.task, TODO_LIST_ITEMS.id as item_id, TODO_LIST_ITEMS.todo_list_id from TODO_LIST left join TODO_LIST_ITEMS on TODO_LIST_ITEMS.todo_list_id = TODO_LIST.id where TODO_LIST.user_id = ${req.params.userId}`,
+    `select TODO_LIST.*, TODO_LIST_ITEMS.task, TODO_LIST_ITEMS.id as item_id, TODO_LIST_ITEMS.todo_list_id, TODO_LIST_ITEMS.complete from TODO_LIST left join TODO_LIST_ITEMS on TODO_LIST_ITEMS.todo_list_id = TODO_LIST.id where TODO_LIST.user_id = ${req.params.userId}`,
     function (error, results, fields) {
       if (error) throw error;
       const formatted = results.reduce((accum, item) => {
@@ -110,7 +110,8 @@ app.get("/users/:userId/lists", (req, res) => {
           };
         }
         if (item.item_id) {
-          accum[item.id].items.push({ id: item.item_id, task: item.task });
+          accum[item.id].items.push({ id: item.item_id, task: item.task, complete: !!item.complete });
+          accum[item.id].items = accum[item.id].items.sort((a, b) => a.id - b.id);
         }
 
         return accum;
@@ -150,26 +151,22 @@ app.put("/users/:userId/lists/:listId", (req, res) => {
   );
 });
 
-// app.put("/users/:id/lists/:listId/item/:itemId", (req, res) => {
-//   console.log(req.body);
-//   const itemId = req.params.itemId;
-//   console.log("We're here");
-//   const itemName = req.body.itemName;
-//   const values = { name: itemName };
-//   var query = connection.query(
-//     `UPDATE TODO_LIST_ITEMS SET task = "${itemName}" WHERE id = "${itemId}"`,
-//     values,
-//     function (error, results, fields) {
-//       if (error) throw error;
-//       res.send(results);
-//     }
-//   );
-// });
+app.put("/users/:id/lists/:listId/item/:itemId", (req, res) => {
+  const itemId = req.params.itemId;
+  const itemName = req.body.task;
+  const complete = req.body.complete;
+  var query = connection.query(
+    `UPDATE TODO_LIST_ITEMS SET task = "${itemName}", complete=${complete ? 1 : 0} WHERE id = "${itemId}"`,
+    function (error, results, fields) {
+      if (error) throw error;
+      res.send(results);
+    }
+  );
+});
 
 app.post("/users/:id/lists/:listId/item", (req, res) => {
   console.log(req.body);
   const listId = req.params.listId;
-  console.log("boom boom boom");
   const itemName = req.body.itemName;
   const values = { itemName, listId };
   var query = connection.query(
