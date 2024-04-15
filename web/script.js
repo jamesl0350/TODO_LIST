@@ -52,6 +52,10 @@ function getSelectedListId() {
   return parseInt(localStorage.getItem(LOCAL_STORAGE_SELECTED_LIST_ID_KEY) || 0) || null;
 }
 
+function getSelectedList() {
+  return getLists().find((list) => list.todo_list_id === getSelectedListId());
+}
+
 function setSelectedListId(selectedListId) {
   localStorage.setItem(LOCAL_STORAGE_SELECTED_LIST_ID_KEY, selectedListId);
 }
@@ -80,7 +84,7 @@ tasksContainer.addEventListener("click", (e) => {
       // selectedTask.complete = e.target.checked;
       updateTaskById(selectedList.todo_list_id, selectedTask.id, {...selectedTask, complete: e.target.checked }).then(v => {
         fetchAndSetUserList();
-        renderTaskCount(selectedList);
+        renderTaskCount();
       });
     }
 
@@ -184,7 +188,7 @@ function render() {
   } else {
     listDisplayContainer.style.display = "";
     listTitleElement.innerText = selectedList.name;
-    renderTaskCount(selectedList);
+    renderTaskCount();
     clearElement(tasksContainer);
     renderTasks(selectedList);
   }
@@ -208,8 +212,8 @@ function renderTasks(selectedList) {
   });
 }
 
-function renderTaskCount(selectedList) {
-  console.log(selectedList)
+function renderTaskCount() {
+  const selectedList = getSelectedList();
   const incompleteTaskCount = selectedList.items.filter(
     (task) => !task.complete
   ).length;
