@@ -69,12 +69,12 @@ listsContainer.addEventListener("click", (e) => {
 tasksContainer.addEventListener("click", (e) => {
   if (e.target.tagName.toLowerCase() === "input") {
     const selectedList = getLists().find((list) => list.todo_list_id === getSelectedListId());
-    const selectedTask = selectedList.tasks.find(
+    const selectedTask = selectedList.items.find(
       (task) => task.id === e.target.id
     );
     selectedTask.complete = e.target.checked;
     save();
-    // renderTaskCount(selectedList);
+    renderTaskCount(selectedList);
   }
 });
 
@@ -88,7 +88,7 @@ deleteListButton.addEventListener("click", (e) => {
 
 clearCompleteTasksButton.addEventListener("click", (e) => {
   const selectedList = getLists().find((list) => list.todo_list_id === getSelectedListId());
-  selectedList.tasks = selectedList.tasks.filter((task) => !task.complete);
+  selectedList.items = selectedList.items.filter((task) => !task.complete);
   // TODO need to update selected list and call fetchAndSetUserList
   saveAndRender();
 });
@@ -170,16 +170,13 @@ function saveAndRender() {
 function render() {
   clearElement(listsContainer);
   renderLists();
-  console.log('12321323', getSelectedListId())
-  console.log('12321323', getLists())
   const selectedList = getLists().find((list) => list.todo_list_id === getSelectedListId());
-  console.log('12323', selectedList)
   if (selectedList == null) {
     listDisplayContainer.style.display = "none";
   } else {
     listDisplayContainer.style.display = "";
-    // listTitleElement.innerText = selectedList.name;
-    // renderTaskCount(selectedList);
+    listTitleElement.innerText = selectedList.name;
+    renderTaskCount(selectedList);
     clearElement(tasksContainer);
     renderTasks(selectedList);
   }
@@ -204,7 +201,8 @@ function renderTasks(selectedList) {
 }
 
 function renderTaskCount(selectedList) {
-  const incompleteTaskCount = selectedList.tasks.filter(
+  console.log(selectedList)
+  const incompleteTaskCount = selectedList.items.filter(
     (task) => !task.complete
   ).length;
   const taskString = incompleteTaskCount === 1 ? "task" : "tasks";

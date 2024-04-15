@@ -42,6 +42,13 @@ body {
 .main {
     display: contents;
 }
+
+.body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .title {
     grid-area: header;
     text-align: center;
@@ -265,4 +272,10 @@ color: var(--clr-dark)
     bottom: -30px;
     color: var(--clr-light)
 
+}
+
+.logout {
+    position: absolute;
+    right: 20px;
+    top: 20px;
 }
