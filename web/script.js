@@ -33,12 +33,34 @@ const clearCompleteTasksButton = document.querySelector(
 
 const LOCAL_STORAGE_LIST_KEY = "task.lists";
 const LOCAL_STORAGE_SELECTED_LIST_ID_KEY = "task.selectedListId";
-let lists = JSON.parse(localStorage.getItem(LOCAL_STORAGE_LIST_KEY)) || [];
-let selectedListId = localStorage.getItem(LOCAL_STORAGE_SELECTED_LIST_ID_KEY);
+// let lists = JSON.parse(localStorage.getItem(LOCAL_STORAGE_LIST_KEY)) || [];
+// let selectedListId = localStorage.getItem(LOCAL_STORAGE_SELECTED_LIST_ID_KEY);
+
+function getLists() {
+  return JSON.parse(localStorage.getItem(LOCAL_STORAGE_LIST_KEY)) || [];
+}
+
+function setLists(lists) {
+  localStorage.setItem(LOCAL_STORAGE_LIST_KEY, JSON.stringify(lists || []));
+}
+
+function getSelectedListId() {
+  return parseInt(localStorage.getItem(LOCAL_STORAGE_SELECTED_LIST_ID_KEY) || 0) || null;
+}
+
+function setSelectedListId(selectedListId) {
+  localStorage.setItem(LOCAL_STORAGE_SELECTED_LIST_ID_KEY, selectedListId);
+}
+
+function getUserId() {
+  return JSON.parse(localStorage.getItem('user') || {}).id;
+}
 
 listsContainer.addEventListener("click", (e) => {
   if (e.target.tagName.toLowerCase() === "li") {
-    selectedListId = e.target.dataset.listId;
+    const selectedListId = e.target.dataset.listId;
+    console.log("selectedListId", selectedListId)
+    setSelectedListId(selectedListId);
     console.log(e.target.dataset);
     saveAndRender();
   }
@@ -46,7 +68,7 @@ listsContainer.addEventListener("click", (e) => {
 
 tasksContainer.addEventListener("click", (e) => {
   if (e.target.tagName.toLowerCase() === "input") {
-    const selectedList = lists.find((list) => list.name === selectedListId);
+    const selectedList = getLists().find((list) => list.todo_list_id === getSelectedListId());
     const selectedTask = selectedList.tasks.find(
       (task) => task.id === e.target.id
     );
@@ -57,14 +79,17 @@ tasksContainer.addEventListener("click", (e) => {
 });
 
 deleteListButton.addEventListener("click", (e) => {
-  lists = lists.filter((list) => list.id !== selectedListId);
-  selectedListId = null;
+  const newLists = getLists().filter((list) => list.todo_list_id !== selectedListId);
+  //; TODO this isn't actually deleting anything
+  setSelectedListId(null);
+  setLists(newLists);
   saveAndRender();
 });
 
 clearCompleteTasksButton.addEventListener("click", (e) => {
-  const selectedList = lists.find((list) => list.name === selectedListId);
+  const selectedList = getLists().find((list) => list.todo_list_id === getSelectedListId());
   selectedList.tasks = selectedList.tasks.filter((task) => !task.complete);
+  // TODO need to update selected list and call fetchAndSetUserList
   saveAndRender();
 });
 
@@ -72,9 +97,9 @@ newListForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const listName = newListInput.value;
   if (listName == null || listName === "") return;
-  const list = createList(listName);
+  // const list = createList(listName);
   newListInput.value = null;
-  lists.push(list);
+  // lists.push(list);
   createUserList(listName);
   saveAndRender();
 });
@@ -85,9 +110,7 @@ newTaskForm.addEventListener("submit", (e) => {
   if (taskName == null || taskName === "") return;
   const task = createTask(taskName);
   newTaskInput.value = null;
-  const selectedList = lists.find((list) => list.name === selectedListId);
   // selectedList.tasks.push(task);
-  console.log("blahblahblah");
   createTaskItem(taskName);
   saveAndRender();
 });
@@ -139,22 +162,19 @@ function createTask(name) {
 }
 
 function saveAndRender() {
-  save();
-  render();
-}
-
-function save() {
-  localStorage.setItem(LOCAL_STORAGE_LIST_KEY, JSON.stringify(lists));
-  localStorage.setItem(LOCAL_STORAGE_SELECTED_LIST_ID_KEY, selectedListId);
+  fetchAndSetUserList().then(() => {
+    render();
+  })
 }
 
 function render() {
   clearElement(listsContainer);
   renderLists();
-  const selectedList = lists.find((list) => list.name === selectedListId);
-  console.log(selectedListId);
-
-  if (selectedListId == null) {
+  console.log('12321323', getSelectedListId())
+  console.log('12321323', getLists())
+  const selectedList = getLists().find((list) => list.todo_list_id === getSelectedListId());
+  console.log('12323', selectedList)
+  if (selectedList == null) {
     listDisplayContainer.style.display = "none";
   } else {
     listDisplayContainer.style.display = "";
@@ -166,10 +186,8 @@ function render() {
 }
 
 function renderTasks(selectedList) {
-  fetchUserList().then((newList) => {
-    lists = newList;
-    console.log(lists);
-    const desiredList = newList.find((l) => l.name === selectedList);
+  fetchAndSetUserList().then(() => {
+    const desiredList = getLists().find((l) => l.todo_list_id === selectedList.todo_list_id);
     console.log(selectedList);
     console.log("we're here", desiredList);
     desiredList.items.forEach((task) => {
@@ -195,14 +213,13 @@ function renderTaskCount(selectedList) {
 }
 
 function renderLists() {
-  fetchUserList().then((newList) => {
-    lists = newList;
-    lists.forEach((list) => {
+  fetchAndSetUserList().then(() => {
+    getLists().forEach((list) => {
       const listElement = document.createElement("li");
-      listElement.dataset.listId = list.name;
+      listElement.dataset.listId = list.todo_list_id;
       listElement.classList.add("list-name");
       listElement.innerText = list.name;
-      if (list.name === selectedListId) {
+      if (list.todo_list_id === getSelectedListId()) {
         listElement.classList.add("active-list");
       }
       listsContainer.appendChild(listElement);
@@ -244,7 +261,14 @@ function test() {
   };
 }
 
-function fetchUserList(email) {
+function fetchAndSetUserList() {
+  return fetchUserList().then(lists => {
+    setLists(lists);
+    return lists;
+  })
+}
+
+function fetchUserList() {
   var xhttp = new XMLHttpRequest();
   return new Promise((resolve, reject) => {
     xhttp.onerror = function (e) {
@@ -256,7 +280,7 @@ function fetchUserList(email) {
         return resolve(JSON.parse(xhttp.responseText));
       }
     };
-    xhttp.open("GET", "http://127.0.0.1:3000/users/1/lists", true);
+    xhttp.open("GET", `http://127.0.0.1:3000/users/${getUserId()}/lists`, true);
     xhttp.setRequestHeader("Content-Type", "application/json");
     xhttp.send();
   });
@@ -269,9 +293,9 @@ function createUserList(listName) {
     console.log("error", e);
   };
 
-  xhttp.open("POST", "http://127.0.0.1:3000/users/1/lists", true);
+  xhttp.open("POST", `http://127.0.0.1:3000/users/${getUserId()}/lists`, true);
   xhttp.setRequestHeader("Content-Type", "application/json");
-  xhttp.send(JSON.stringify({ listName, userId: 1 }));
+  xhttp.send(JSON.stringify({ listName, userId: getUserId() }));
 }
 
 function createTaskItem(taskName) {
@@ -279,14 +303,14 @@ function createTaskItem(taskName) {
   xhttp.onerror = function (e) {
     console.log("error", e);
   };
-  const listId = 1; //TODO get this from form
+  const listId = getSelectedListId();
   xhttp.open(
     "POST",
-    `http://127.0.0.1:3000/users/1/lists/${listId}/item`,
+    `http://127.0.0.1:3000/users/${getUserId()}/lists/${listId}/item`,
     true
   );
   xhttp.setRequestHeader("Content-Type", "application/json");
-  xhttp.send(JSON.stringify({ itemName: taskName, userId: 1 }));
+  xhttp.send(JSON.stringify({ itemName: taskName, userId: getUserId() }));
 }
 //Registration
 function registration(name, email, password) {
@@ -335,10 +359,12 @@ function checkIfLoggedIn() {
     document.getElementById("main").style.display = "block";
     document.getElementById("logout").style.display = "block";
     document.getElementById("login").style.display = "none";
+    document.getElementById("registration").style.display = "none";
   } else {
     document.getElementById("main").style.display = "none";
     document.getElementById("logout").style.display = "none";
     document.getElementById("login").style.display = "block";
+    document.getElementById("registration").style.display = "block";
   }
 }
 

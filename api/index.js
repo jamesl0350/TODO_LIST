@@ -97,19 +97,21 @@ app.get("/hello", (req, res) => {
 
 app.get("/users/:userId/lists", (req, res) => {
   connection.query(
-    `select TODO_LIST.*, TODO_LIST_ITEMS.* from TODO_LIST inner join TODO_LIST_ITEMS on TODO_LIST_ITEMS.todo_list_id = TODO_LIST.id where TODO_LIST.user_id = ${req.params.userId}`,
+    `select TODO_LIST.*, TODO_LIST_ITEMS.task, TODO_LIST_ITEMS.id as item_id, TODO_LIST_ITEMS.todo_list_id from TODO_LIST left join TODO_LIST_ITEMS on TODO_LIST_ITEMS.todo_list_id = TODO_LIST.id where TODO_LIST.user_id = ${req.params.userId}`,
     function (error, results, fields) {
       if (error) throw error;
       const formatted = results.reduce((accum, item) => {
-        if (!accum[item.todo_list_id]) {
-          accum[item.todo_list_id] = {
-            todo_list_id: item.todo_list_id,
+        if (!accum[item.id]) {
+          accum[item.id] = {
+            todo_list_id: item.id,
             user_id: item.user_id,
             name: item.name,
             items: [],
           };
         }
-        accum[item.todo_list_id].items.push({ id: item.id, task: item.task });
+        if (item.item_id) {
+          accum[item.id].items.push({ id: item.item_id, task: item.task });
+        }
 
         return accum;
       }, {});
