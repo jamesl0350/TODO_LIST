@@ -1,6 +1,6 @@
 const LOCAL = "127.0.0.1:3000";
 const AWS_URL = "34.233.19.178:3000";
-const DOMAIN = LOCAL;
+const DOMAIN = AWS_URL;
 
 const listsContainer = document.querySelector("[data-lists]");
 const newListForm = document.querySelector("[data-new-list-form]");
