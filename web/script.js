@@ -1,6 +1,6 @@
 const LOCAL = "127.0.0.1:3000";
 const AWS_URL = "34.233.19.178:3000";
-const DOMAIN = AWS_URL;
+const DOMAIN = LOCAL;
 
 const listsContainer = document.querySelector("[data-lists]");
 const newListForm = document.querySelector("[data-new-list-form]");
@@ -83,8 +83,7 @@ tasksContainer.addEventListener("click", (e) => {
     if (selectedTask && selectedTask.complete !== e.target.checked) {
       // selectedTask.complete = e.target.checked;
       updateTaskById(selectedList.todo_list_id, selectedTask.id, {...selectedTask, complete: e.target.checked }).then(v => {
-        fetchAndSetUserList();
-        renderTaskCount();
+        fetchAndSetUserList().then(() => renderTaskCount());
       });
     }
 
@@ -188,7 +187,6 @@ function render() {
   } else {
     listDisplayContainer.style.display = "";
     listTitleElement.innerText = selectedList.name;
-    renderTaskCount();
     clearElement(tasksContainer);
     renderTasks(selectedList);
   }
@@ -209,17 +207,20 @@ function renderTasks(selectedList) {
       label.append(task.task);
       tasksContainer.appendChild(taskElement);
     });
+    renderTaskCount();
   });
 }
 
 function renderTaskCount() {
   const selectedList = getSelectedList();
-  const incompleteTaskCount = selectedList.items.filter(
-    (task) => !task.complete
-  ).length;
-  const taskString = incompleteTaskCount === 1 ? "task" : "tasks";
-  listCountElement.innerText = `${incompleteTaskCount} ${taskString} 
-    remaining`;
+  if (selectedList) {
+    const incompleteTaskCount = selectedList.items.filter(
+      (task) => !task.complete
+    ).length;
+    const taskString = incompleteTaskCount === 1 ? "task" : "tasks";
+    listCountElement.innerText = `${incompleteTaskCount} ${taskString} 
+      remaining`;
+  }
 }
 
 function renderLists() {
