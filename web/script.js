@@ -1,3 +1,7 @@
+const LOCAL = "127.0.0.1:3000";
+const AWS_URL = "34.233.19.178:3000";
+const DOMAIN = AWS_URL;
+
 const listsContainer = document.querySelector("[data-lists]");
 const newListForm = document.querySelector("[data-new-list-form]");
 const newListInput = document.querySelector("[data-new-list-input]");
@@ -282,7 +286,7 @@ function fetchUserList() {
         return resolve(JSON.parse(xhttp.responseText));
       }
     };
-    xhttp.open("GET", `http://127.0.0.1:3000/users/${getUserId()}/lists`, true);
+    xhttp.open("GET", `http://${DOMAIN}/users/${getUserId()}/lists`, true);
     xhttp.setRequestHeader("Content-Type", "application/json");
     xhttp.send();
   });
@@ -295,7 +299,7 @@ function createUserList(listName) {
     console.log("error", e);
   };
 
-  xhttp.open("POST", `http://127.0.0.1:3000/users/${getUserId()}/lists`, true);
+  xhttp.open("POST", `http://${DOMAIN}/users/${getUserId()}/lists`, true);
   xhttp.setRequestHeader("Content-Type", "application/json");
   xhttp.send(JSON.stringify({ listName, userId: getUserId() }));
 }
@@ -308,7 +312,7 @@ function createTaskItem(taskName) {
   const listId = getSelectedListId();
   xhttp.open(
     "POST",
-    `http://127.0.0.1:3000/users/${getUserId()}/lists/${listId}/item`,
+    `http://${DOMAIN}/users/${getUserId()}/lists/${listId}/item`,
     true
   );
   xhttp.setRequestHeader("Content-Type", "application/json");
@@ -327,7 +331,7 @@ function updateTaskById(listId, taskId, task) {
         return resolve(JSON.parse(xhttp.responseText));
       }
     }
-    xhttp.open("PUT", `http://127.0.0.1:3000/users/${getUserId()}/lists/${listId}/item/${taskId}`, true);
+    xhttp.open("PUT", `http://${DOMAIN}/users/${getUserId()}/lists/${listId}/item/${taskId}`, true);
     xhttp.setRequestHeader("Content-Type", "application/json");
     xhttp.send(JSON.stringify(task));
   });
@@ -345,7 +349,7 @@ function deleteList() {
         return resolve(JSON.parse(xhttp.responseText));
       }
     }
-    xhttp.open("DELETE", `http://127.0.0.1:3000/users/${getUserId()}/lists/${getSelectedListId()}`, true);
+    xhttp.open("DELETE", `http://${DOMAIN}/users/${getUserId()}/lists/${getSelectedListId()}`, true);
     xhttp.setRequestHeader("Content-Type", "application/json");
     xhttp.send();
   });
@@ -365,7 +369,7 @@ function registration(name, email, password) {
         );
       }
     };
-    xhttp.open("POST", `http://127.0.0.1:3000/registration`, true);
+    xhttp.open("POST", `http://${DOMAIN}/registration`, true);
     xhttp.setRequestHeader("Content-Type", "application/json");
     xhttp.send(JSON.stringify({ name, email, password }));
   });
@@ -384,7 +388,7 @@ function login(email, password) {
         );
       }
     };
-    xhttp.open("POST", `http://127.0.0.1:3000/login`, true);
+    xhttp.open("POST", `http://${DOMAIN}/login`, true);
     xhttp.setRequestHeader("Content-Type", "application/json");
     xhttp.send(JSON.stringify({ email, password }));
   });
