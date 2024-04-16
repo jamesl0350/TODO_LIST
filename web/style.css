@@ -41,6 +41,7 @@ body {
 
 .main {
     display: contents;
+    margin-bottom: 60px;
 }
 
 .body {

@@ -37,6 +37,7 @@ const clearCompleteTasksButton = document.querySelector(
 
 const LOCAL_STORAGE_LIST_KEY = "task.lists";
 const LOCAL_STORAGE_SELECTED_LIST_ID_KEY = "task.selectedListId";
+const LOCAL_STORAGE_HIDE_COMPLETED_TASKS = "hideCompletedTasks";
 // let lists = JSON.parse(localStorage.getItem(LOCAL_STORAGE_LIST_KEY)) || [];
 // let selectedListId = localStorage.getItem(LOCAL_STORAGE_SELECTED_LIST_ID_KEY);
 
@@ -58,6 +59,24 @@ function getSelectedList() {
 
 function setSelectedListId(selectedListId) {
   localStorage.setItem(LOCAL_STORAGE_SELECTED_LIST_ID_KEY, selectedListId);
+}
+
+function updateHideCompletedTasks() {
+  const currentValue = localStorage.getItem(LOCAL_STORAGE_HIDE_COMPLETED_TASKS) || "false";
+  localStorage.setItem(LOCAL_STORAGE_HIDE_COMPLETED_TASKS, currentValue === "false" ? "true" : "false");
+}
+
+function updateHideShowCompletedTasksText() {
+  if (getHideCompletedTasks()) {
+    clearCompleteTasksButton.innerText = "Show the completed tasks"
+  } else {
+    clearCompleteTasksButton.innerText = "Hide the completed tasks";
+  }
+}
+
+function getHideCompletedTasks() {
+  const currentValue = localStorage.getItem(LOCAL_STORAGE_HIDE_COMPLETED_TASKS) || "false";
+  return currentValue === "false" ? false : true;
 }
 
 function getUserId() {
@@ -98,10 +117,9 @@ deleteListButton.addEventListener("click", (e) => {
 });
 
 clearCompleteTasksButton.addEventListener("click", (e) => {
-  const selectedList = getLists().find((list) => list.todo_list_id === getSelectedListId());
-  selectedList.items = selectedList.items.filter((task) => !task.complete);
-  // TODO need to update selected list and call fetchAndSetUserList
-  saveAndRender();
+  updateHideCompletedTasks();
+  updateHideShowCompletedTasksText();
+  render();
 });
 
 newListForm.addEventListener("submit", (e) => {
@@ -194,10 +212,10 @@ function render() {
 
 function renderTasks(selectedList) {
   fetchAndSetUserList().then(() => {
+    const shouldHideCompleted = getHideCompletedTasks();
     const desiredList = getLists().find((l) => l.todo_list_id === selectedList.todo_list_id);
-    console.log(selectedList);
-    console.log("we're here", desiredList);
     desiredList.items.forEach((task) => {
+      if (task.complete && shouldHideCompleted) return;
       const taskElement = document.importNode(taskTemplate.content, true);
       const checkbox = taskElement.querySelector("input");
       checkbox.id = task.id;
@@ -438,3 +456,4 @@ function getUserId() {
 //fetching data, need to fetch user lists and render that
 checkIfLoggedIn();
 render();
+updateHideShowCompletedTasksText();
