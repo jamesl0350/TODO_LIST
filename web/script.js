@@ -1,3 +1,7 @@
+const LOCAL = "127.0.0.1:3000";
+const AWS_URL = "34.233.19.178:3000";
+const DOMAIN = AWS_URL;
+
 const listsContainer = document.querySelector("[data-lists]");
 const newListForm = document.querySelector("[data-new-list-form]");
 const newListInput = document.querySelector("[data-new-list-input]");
@@ -33,48 +37,96 @@ const clearCompleteTasksButton = document.querySelector(
 
 const LOCAL_STORAGE_LIST_KEY = "task.lists";
 const LOCAL_STORAGE_SELECTED_LIST_ID_KEY = "task.selectedListId";
-let lists = JSON.parse(localStorage.getItem(LOCAL_STORAGE_LIST_KEY)) || [];
-let selectedListId = localStorage.getItem(LOCAL_STORAGE_SELECTED_LIST_ID_KEY);
+const LOCAL_STORAGE_HIDE_COMPLETED_TASKS = "hideCompletedTasks";
+// let lists = JSON.parse(localStorage.getItem(LOCAL_STORAGE_LIST_KEY)) || [];
+// let selectedListId = localStorage.getItem(LOCAL_STORAGE_SELECTED_LIST_ID_KEY);
+
+function getLists() {
+  return JSON.parse(localStorage.getItem(LOCAL_STORAGE_LIST_KEY)) || [];
+}
+
+function setLists(lists) {
+  localStorage.setItem(LOCAL_STORAGE_LIST_KEY, JSON.stringify(lists || []));
+}
+
+function getSelectedListId() {
+  return parseInt(localStorage.getItem(LOCAL_STORAGE_SELECTED_LIST_ID_KEY) || 0) || null;
+}
+
+function getSelectedList() {
+  return getLists().find((list) => list.todo_list_id === getSelectedListId());
+}
+
+function setSelectedListId(selectedListId) {
+  localStorage.setItem(LOCAL_STORAGE_SELECTED_LIST_ID_KEY, selectedListId);
+}
+
+function updateHideCompletedTasks() {
+  const currentValue = localStorage.getItem(LOCAL_STORAGE_HIDE_COMPLETED_TASKS) || "false";
+  localStorage.setItem(LOCAL_STORAGE_HIDE_COMPLETED_TASKS, currentValue === "false" ? "true" : "false");
+}
+
+function updateHideShowCompletedTasksText() {
+  if (getHideCompletedTasks()) {
+    clearCompleteTasksButton.innerText = "Show the completed tasks"
+  } else {
+    clearCompleteTasksButton.innerText = "Hide the completed tasks";
+  }
+}
+
+function getHideCompletedTasks() {
+  const currentValue = localStorage.getItem(LOCAL_STORAGE_HIDE_COMPLETED_TASKS) || "false";
+  return currentValue === "false" ? false : true;
+}
+
+function getUserId() {
+  return JSON.parse(localStorage.getItem('user') || {}).id;
+}
 
 listsContainer.addEventListener("click", (e) => {
   if (e.target.tagName.toLowerCase() === "li") {
-    selectedListId = e.target.dataset.listId;
-    console.log(e.target.dataset);
+    const selectedListId = e.target.dataset.listId;
+    setSelectedListId(selectedListId);
     saveAndRender();
   }
 });
 
 tasksContainer.addEventListener("click", (e) => {
   if (e.target.tagName.toLowerCase() === "input") {
-    const selectedList = lists.find((list) => list.name === selectedListId);
-    const selectedTask = selectedList.tasks.find(
-      (task) => task.id === e.target.id
+    const selectedList = getLists().find((list) => list.todo_list_id === getSelectedListId());
+    const selectedTask = selectedList.items.find(
+      (task) => `${task.id}` === `${e.target.id}`
     );
-    selectedTask.complete = e.target.checked;
-    save();
-    // renderTaskCount(selectedList);
+    if (selectedTask && selectedTask.complete !== e.target.checked) {
+      // selectedTask.complete = e.target.checked;
+      updateTaskById(selectedList.todo_list_id, selectedTask.id, {...selectedTask, complete: e.target.checked }).then(v => {
+        fetchAndSetUserList().then(() => renderTaskCount());
+      });
+    }
+
   }
 });
 
 deleteListButton.addEventListener("click", (e) => {
-  lists = lists.filter((list) => list.id !== selectedListId);
-  selectedListId = null;
-  saveAndRender();
+  deleteList().then(() => {
+    setSelectedListId(null);
+    saveAndRender();
+  });
 });
 
 clearCompleteTasksButton.addEventListener("click", (e) => {
-  const selectedList = lists.find((list) => list.name === selectedListId);
-  selectedList.tasks = selectedList.tasks.filter((task) => !task.complete);
-  saveAndRender();
+  updateHideCompletedTasks();
+  updateHideShowCompletedTasksText();
+  render();
 });
 
 newListForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const listName = newListInput.value;
   if (listName == null || listName === "") return;
-  const list = createList(listName);
+  // const list = createList(listName);
   newListInput.value = null;
-  lists.push(list);
+  // lists.push(list);
   createUserList(listName);
   saveAndRender();
 });
@@ -85,9 +137,7 @@ newTaskForm.addEventListener("submit", (e) => {
   if (taskName == null || taskName === "") return;
   const task = createTask(taskName);
   newTaskInput.value = null;
-  const selectedList = lists.find((list) => list.name === selectedListId);
   // selectedList.tasks.push(task);
-  console.log("blahblahblah");
   createTaskItem(taskName);
   saveAndRender();
 });
@@ -102,7 +152,6 @@ submitRegistrationForm.addEventListener("submit", (e) => {
 
   registration(name, email, password).then((result) => {
     if (!result) alert("login failed");
-    console.log(result);
     localStorage.setItem("user", JSON.stringify(result));
     saveAndRender();
     checkIfLoggedIn();
@@ -118,7 +167,6 @@ submitLoginForm.addEventListener("submit", (e) => {
 
   login(email, password).then((result) => {
     if (!result) alert("login failed");
-    console.log(result);
     localStorage.setItem("user", JSON.stringify(result));
   });
   saveAndRender();
@@ -139,40 +187,31 @@ function createTask(name) {
 }
 
 function saveAndRender() {
-  save();
-  render();
-}
-
-function save() {
-  localStorage.setItem(LOCAL_STORAGE_LIST_KEY, JSON.stringify(lists));
-  localStorage.setItem(LOCAL_STORAGE_SELECTED_LIST_ID_KEY, selectedListId);
+  fetchAndSetUserList().then(() => {
+    render();
+  })
 }
 
 function render() {
   clearElement(listsContainer);
   renderLists();
-  const selectedList = lists.find((list) => list.name === selectedListId);
-  console.log(selectedListId);
-
-  if (selectedListId == null) {
+  const selectedList = getLists().find((list) => list.todo_list_id === getSelectedListId());
+  if (selectedList == null) {
     listDisplayContainer.style.display = "none";
   } else {
     listDisplayContainer.style.display = "";
-    // listTitleElement.innerText = selectedList.name;
-    // renderTaskCount(selectedList);
+    listTitleElement.innerText = selectedList.name;
     clearElement(tasksContainer);
     renderTasks(selectedList);
   }
 }
 
 function renderTasks(selectedList) {
-  fetchUserList().then((newList) => {
-    lists = newList;
-    console.log(lists);
-    const desiredList = newList.find((l) => l.name === selectedList);
-    console.log(selectedList);
-    console.log("we're here", desiredList);
+  fetchAndSetUserList().then(() => {
+    const shouldHideCompleted = getHideCompletedTasks();
+    const desiredList = getLists().find((l) => l.todo_list_id === selectedList.todo_list_id);
     desiredList.items.forEach((task) => {
+      if (task.complete && shouldHideCompleted) return;
       const taskElement = document.importNode(taskTemplate.content, true);
       const checkbox = taskElement.querySelector("input");
       checkbox.id = task.id;
@@ -182,27 +221,30 @@ function renderTasks(selectedList) {
       label.append(task.task);
       tasksContainer.appendChild(taskElement);
     });
+    renderTaskCount();
   });
 }
 
-function renderTaskCount(selectedList) {
-  const incompleteTaskCount = selectedList.tasks.filter(
-    (task) => !task.complete
-  ).length;
-  const taskString = incompleteTaskCount === 1 ? "task" : "tasks";
-  listCountElement.innerText = `${incompleteTaskCount} ${taskString} 
-    remaining`;
+function renderTaskCount() {
+  const selectedList = getSelectedList();
+  if (selectedList) {
+    const incompleteTaskCount = selectedList.items.filter(
+      (task) => !task.complete
+    ).length;
+    const taskString = incompleteTaskCount === 1 ? "task" : "tasks";
+    listCountElement.innerText = `${incompleteTaskCount} ${taskString} 
+      remaining`;
+  }
 }
 
 function renderLists() {
-  fetchUserList().then((newList) => {
-    lists = newList;
-    lists.forEach((list) => {
+  fetchAndSetUserList().then(() => {
+    getLists().forEach((list) => {
       const listElement = document.createElement("li");
-      listElement.dataset.listId = list.name;
+      listElement.dataset.listId = list.todo_list_id;
       listElement.classList.add("list-name");
       listElement.innerText = list.name;
-      if (list.name === selectedListId) {
+      if (list.todo_list_id === getSelectedListId()) {
         listElement.classList.add("active-list");
       }
       listsContainer.appendChild(listElement);
@@ -244,7 +286,14 @@ function test() {
   };
 }
 
-function fetchUserList(email) {
+function fetchAndSetUserList() {
+  return fetchUserList().then(lists => {
+    setLists(lists);
+    return lists;
+  })
+}
+
+function fetchUserList() {
   var xhttp = new XMLHttpRequest();
   return new Promise((resolve, reject) => {
     xhttp.onerror = function (e) {
@@ -256,7 +305,7 @@ function fetchUserList(email) {
         return resolve(JSON.parse(xhttp.responseText));
       }
     };
-    xhttp.open("GET", "http://127.0.0.1:3000/users/1/lists", true);
+    xhttp.open("GET", `http://${DOMAIN}/users/${getUserId()}/lists`, true);
     xhttp.setRequestHeader("Content-Type", "application/json");
     xhttp.send();
   });
@@ -269,9 +318,9 @@ function createUserList(listName) {
     console.log("error", e);
   };
 
-  xhttp.open("POST", "http://127.0.0.1:3000/users/1/lists", true);
+  xhttp.open("POST", `http://${DOMAIN}/users/${getUserId()}/lists`, true);
   xhttp.setRequestHeader("Content-Type", "application/json");
-  xhttp.send(JSON.stringify({ listName, userId: 1 }));
+  xhttp.send(JSON.stringify({ listName, userId: getUserId() }));
 }
 
 function createTaskItem(taskName) {
@@ -279,15 +328,52 @@ function createTaskItem(taskName) {
   xhttp.onerror = function (e) {
     console.log("error", e);
   };
-  const listId = 1; //TODO get this from form
+  const listId = getSelectedListId();
   xhttp.open(
     "POST",
-    `http://127.0.0.1:3000/users/1/lists/${listId}/item`,
+    `http://${DOMAIN}/users/${getUserId()}/lists/${listId}/item`,
     true
   );
   xhttp.setRequestHeader("Content-Type", "application/json");
-  xhttp.send(JSON.stringify({ itemName: taskName, userId: 1 }));
+  xhttp.send(JSON.stringify({ itemName: taskName, userId: getUserId() }));
 }
+
+function updateTaskById(listId, taskId, task) {
+  var xhttp = new XMLHttpRequest();
+  return new Promise((resolve, reject) => {
+    xhttp.onerror = function (e) {
+      console.log("error", e);
+    };
+
+    xhttp.onreadystatechange = function () {
+      if (xhttp.readyState == XMLHttpRequest.DONE) {
+        return resolve(JSON.parse(xhttp.responseText));
+      }
+    }
+    xhttp.open("PUT", `http://${DOMAIN}/users/${getUserId()}/lists/${listId}/item/${taskId}`, true);
+    xhttp.setRequestHeader("Content-Type", "application/json");
+    xhttp.send(JSON.stringify(task));
+  });
+}
+
+function deleteList() {
+  var xhttp = new XMLHttpRequest();
+  return new Promise((resolve, reject) => {
+    xhttp.onerror = function (e) {
+      console.log("error", e);
+    };
+
+    xhttp.onreadystatechange = function () {
+      if (xhttp.readyState == XMLHttpRequest.DONE) {
+        return resolve(JSON.parse(xhttp.responseText));
+      }
+    }
+    xhttp.open("DELETE", `http://${DOMAIN}/users/${getUserId()}/lists/${getSelectedListId()}`, true);
+    xhttp.setRequestHeader("Content-Type", "application/json");
+    xhttp.send();
+  });
+}
+
 //Registration
 function registration(name, email, password) {
   return new Promise((resolve, reject) => {
@@ -302,7 +388,7 @@ function registration(name, email, password) {
         );
       }
     };
-    xhttp.open("POST", `http://127.0.0.1:3000/registration`, true);
+    xhttp.open("POST", `http://${DOMAIN}/registration`, true);
     xhttp.setRequestHeader("Content-Type", "application/json");
     xhttp.send(JSON.stringify({ name, email, password }));
   });
@@ -321,7 +407,7 @@ function login(email, password) {
         );
       }
     };
-    xhttp.open("POST", `http://127.0.0.1:3000/login`, true);
+    xhttp.open("POST", `http://${DOMAIN}/login`, true);
     xhttp.setRequestHeader("Content-Type", "application/json");
     xhttp.send(JSON.stringify({ email, password }));
   });
@@ -329,16 +415,17 @@ function login(email, password) {
 
 function checkIfLoggedIn() {
   var user = localStorage.getItem("user");
-  console.log(user);
   if (user && user != "null") {
     console.log("User Exists");
     document.getElementById("main").style.display = "block";
     document.getElementById("logout").style.display = "block";
     document.getElementById("login").style.display = "none";
+    document.getElementById("registration").style.display = "none";
   } else {
     document.getElementById("main").style.display = "none";
     document.getElementById("logout").style.display = "none";
     document.getElementById("login").style.display = "block";
+    document.getElementById("registration").style.display = "block";
   }
 }
 
@@ -364,3 +451,4 @@ function getUserId() {
 //fetching data, need to fetch user lists and render that
 checkIfLoggedIn();
 render();
+updateHideShowCompletedTasksText();

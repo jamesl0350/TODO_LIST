@@ -7,54 +7,56 @@
     <link rel="stylesheet" href="style.css" />
     <script defer src="script.js"></script>
   </head>
-  <body>
-    <form
-      action=""
-      id="registration"
-      data-new-registration-form
-      class="registration-page"
-    >
-      <h4>Registration</h4>
-      <input
-        type="text"
-        data-new-registration-name
-        class="registration"
-        placeholder="Name"
-      />
-      <input
-        type="text"
-        data-new-registration-email
-        class="registration"
-        placeholder="Email"
-      />
-      <input
-        data-new-registration-password
-        type="text"
-        class="registration"
-        placeholder="Password"
-      />
-      <button class="registration-submit" aria-label="registration-submit">
-        Submit
-      </button>
-    </form>
+  <body class="body">
+    <div id="no-user" class="no-user"></div>
+      <form
+        action=""
+        id="registration"
+        data-new-registration-form
+        class="registration-page"
+      >
+        <h4>Registration</h4>
+        <input
+          type="text"
+          data-new-registration-name
+          class="registration"
+          placeholder="Name"
+        />
+        <input
+          type="text"
+          data-new-registration-email
+          class="registration"
+          placeholder="Email"
+        />
+        <input
+          data-new-registration-password
+          type="text"
+          class="registration"
+          placeholder="Password"
+        />
+        <button class="registration-submit" aria-label="registration-submit">
+          Submit
+        </button>
+      </form>
 
-    <form id="login" action="" data-new-login-form class="login-page">
-      <h4>Login</h4>
-      <input
-        data-new-login-email
-        type="text"
-        class="login"
-        placeholder="Email"
-      />
+      <form id="login" action="" data-new-login-form class="login-page">
+        <h4>Login</h4>
+        <input
+          data-new-login-email
+          type="text"
+          class="login"
+          placeholder="Email"
+        />
 
-      <input
-        data-new-login-password
-        type="text"
-        class="login"
-        placeholder="Password"
-      />
-      <button class="submit" aria-label="submit">Submit</button>
-    </form>
+        <input
+          data-new-login-password
+          type="text"
+          class="login"
+          placeholder="Password"
+        />
+        <button class="submit" aria-label="submit">Submit</button>
+      </form>
+    </div>
     <button class="logout" id="logout" aria-label="logout">Logout</button>
     <div id="main" class="main">
       <h1 class="title">Things to do Today!</h1>
@@ -97,7 +99,7 @@
           </div>
           <div class="delete-stuff">
             <button class="btn delete" data-clear-complete-tasks-button>
-              Clear the completed task
+              Hide the completed tasks
             </button>
             <button class="btn delete" data-delete-list-btn>Delete list</button>
           </div>
