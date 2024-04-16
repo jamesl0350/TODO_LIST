@@ -86,9 +86,7 @@ function getUserId() {
 listsContainer.addEventListener("click", (e) => {
   if (e.target.tagName.toLowerCase() === "li") {
     const selectedListId = e.target.dataset.listId;
-    console.log("selectedListId", selectedListId)
     setSelectedListId(selectedListId);
-    console.log(e.target.dataset);
     saveAndRender();
   }
 });
@@ -154,7 +152,6 @@ submitRegistrationForm.addEventListener("submit", (e) => {
 
   registration(name, email, password).then((result) => {
     if (!result) alert("login failed");
-    console.log(result);
     localStorage.setItem("user", JSON.stringify(result));
     saveAndRender();
     checkIfLoggedIn();
@@ -170,7 +167,6 @@ submitLoginForm.addEventListener("submit", (e) => {
 
   login(email, password).then((result) => {
     if (!result) alert("login failed");
-    console.log(result);
     localStorage.setItem("user", JSON.stringify(result));
   });
   saveAndRender();
@@ -419,7 +415,6 @@ function login(email, password) {
 
 function checkIfLoggedIn() {
   var user = localStorage.getItem("user");
-  console.log(user);
   if (user && user != "null") {
     console.log("User Exists");
     document.getElementById("main").style.display = "block";
